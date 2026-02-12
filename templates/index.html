@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Messenger</title>
+    <style>
+        body {font-family: Arial, sans-serif; max-width: 700px; margin: 24px auto; padding: 0 14px;}
+        #chat {border: 1px solid #ddd; border-radius: 10px; padding: 12px; height: 360px; overflow-y: auto;}
+        .msg {margin: 8px 0;}
+        .name {font-weight: bold;}
+        .row { display: flex; gap: 10px; margin-top: 12px;}
+        input, button {padding: 10px; border-radius: 8px; border: 1px solid #ccc;}
+        #name {width: 160px;}
+        #text {flex: 1;}
+        #status {margin: 10px 0; font-size: 14px; color: #444;}
+        button {cursor: pointer;}
+    </style>
+</head>
+<body>
+    <h2>🗪 Flask Messenger</h2>
+    <div id="status">Status: connecting...</div>
+
+    <div id="chat"></div>
+
+    <div class="row">
+        <input id="name" placeholder="Your name"/>
+        <input id="text" placeholder="Type a message..."/>
+        <button id="sendBtn" type="button">Send</button>
+    </div>
+
+    <!--Socket.IO Client-->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+
+        const statusEl = document.getElementById("status");
+        const chat = document.getElementById("chat");
+        const nameEl = document.getElementById("name");
+        const textEl = document.getElementById("text");
+        const sendBtn = document.getElementById("sendBtn");
+
+        function escapeHtml(s){
+            return (s || "").replace(/[&<>"'"]/g, (c) => ({
+                "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+            }[c]));
+        }
+
+        function addMessage({name, text}){
+            const div = document.createElement("div");
+            div.className = "msg";
+            div.innerHTML = `<span class="name">${escapeHtml(name)}:</span> ${escapeHtml(text)}`;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        const socket = io(window.location.origin);
+
+        socket.on("connect", () => {
+            statusEl.textContent = "Status: connected ✅";
+            console.log("Connected: ", socket.id);
+        })
+
+        socket.on("disconnect", () => {
+            statusEl.textContent = "Status: disconnected ❌";
+            console.log("Disconnected");
+        })
+
+        socket.on("connect_error", (err) => {
+            statusEl.textContent = "Status: connect error ❌ (Check firewall/IP)";
+            console.error("connect_error: ", err);
+        })
+
+        socket.on("message", (msg) => addMessage(msg));
+
+        function sendMessage(){
+            const name = nameEl.value.trim() || "Anon";
+            const text = textEl.value.trim();
+            if(!text) return;
+            socket.send({name, text});
+            textEl.value = "";
+            textEl.focus();
+        }
+
+        sendBtn.addEventListener("click", sendMessage);
+        textEl.addEventListener("keydown", (e) => {
+            if(e.key === "Enter") sendMessage();
+        })
+    </script>
+</body>
+</html>
