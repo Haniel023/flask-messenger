@@ -1,168 +1,592 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>Messenger</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LAN Messenger</title>
 
-<style>
-:root{
-  --bg:#f6f7fb;
-  --panel:#ffffff;
-  --text:#0f172a;
-  --border:#e2e8f0;
-  --accent:#2563eb;
-}
+  <style>
+    :root{
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --border: rgba(15, 23, 42, 0.10);
+      --text: #0f172a;
+      --muted: rgba(15, 23, 42, 0.55);
 
-[data-mode="dark"]{
-  --bg:#0b1220;
-  --panel:#0f172a;
-  --text:#e2e8f0;
-  --border:#1e293b;
-}
+      --accent: #2563eb;
 
-[data-theme="green"]{ --accent:#16a34a; } [data-theme="pink"]{ --accent:#db2777; }
+      --bubble-me: var(--accent);
+      --bubble-me-text: #ffffff;
 
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:sans-serif;
-}
+      --bubble-other: #eef2ff;
+      --bubble-other-text: #0f172a;
 
-.chat{
-  height:400px;
-  overflow-y:auto;
-  border:1px solid var(--border);
-  padding:10px;
-  background:var(--panel);
-}
+      --pill: #f1f5f9;
+    }
 
-.msg{ margin:10px 0; }
-.right{ text-align:right; }
+    /* Dark mode */
+    html[data-mode="dark"]{
+      --bg: #0b1220;
+      --panel: #0f1a2e;
+      --border: rgba(255,255,255,0.10);
+      --text: #e6e9f2;
+      --muted: rgba(230,233,242,0.55);
 
-.bubble{
-  display:inline-block;
-  padding:8px 12px;
-  border-radius:12px;
-  background:var(--accent);
-  color:white;
-}
+      --bubble-other: rgba(255,255,255,0.08);
+      --bubble-other-text: #e6e9f2;
 
-.left .bubble{
-  background:#e2e8f0;
-  color:black;
-}
+      --pill: rgba(255,255,255,0.08);
+    }
 
-.meta{
-  font-size:11px;
-  opacity:0.6;
-}
+    /* Theme accents */
+    html[data-theme="blue"]  { --accent: #2563eb; }
+    html[data-theme="green"] { --accent: #16a34a; }
+    html[data-theme="pink"]  { --accent: #db2777; }
+    html[data-theme="purple"]{ --accent: #7c3aed; }
+    html[data-theme="orange"]{ --accent: #f97316; }
 
-.date-sep{
-  text-align:center;
-  font-size:12px;
-  margin:10px 0;
-  opacity:0.6;
-}
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: var(--bg);
+      color: var(--text);
+    }
 
-.read{
-  font-size:10px;
-  opacity:0.5;
-}
-</style>
+    .wrap{ max-width: 980px; margin: 22px auto; padding: 0 14px; }
+
+    .top{
+      display:flex; gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom: 12px;
+    }
+
+    .title{ display:flex; flex-direction:column; gap:2px; }
+    .title h1{ font-size:18px; margin:0; }
+    .title .sub{ font-size:12px; color:var(--muted); }
+
+    .rightTools{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    }
+
+    .status{
+      display:flex; gap:8px; align-items:center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-right: 6px;
+    }
+
+    .dot{
+      width:8px;height:8px;border-radius:99px;
+      background: #f59e0b;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.30);
+    }
+    .dot.ok{ background:#22c55e; box-shadow:0 0 10px rgba(34, 197, 94, 0.28); }
+    .dot.bad{ background:#ef4444; box-shadow:0 0 10px rgba(239, 68, 68, 0.22); }
+
+    .btn, select{
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 10px 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .card{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow:hidden;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+    }
+
+    .chat{
+      height: 480px;
+      overflow-y:auto;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(37,99,235,0.04), transparent 45%);
+    }
+
+    .typing{
+      padding: 8px 14px 0 14px;
+      font-size: 12px;
+      color: var(--muted);
+      min-height: 18px;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      align-items:center;
+      background: rgba(15,23,42,0.02);
+    }
+
+    input{
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 11px 12px;
+      outline:none;
+    }
+    input::placeholder{ color: rgba(15,23,42,0.35); }
+    html[data-mode="dark"] input::placeholder{ color: rgba(230,233,242,0.40); }
+
+    #name{ width: 170px; }
+    #text{ flex:1; }
+
+    #sendBtn{
+      background: var(--accent);
+      border: 1px solid rgba(37,99,235,0.25);
+      color: #fff;
+      font-weight: 800;
+      padding: 11px 14px;
+    }
+
+    /* Messages */
+    .msg{ display:flex; margin: 10px 0; }
+    .msg.left{ justify-content:flex-start; }
+    .msg.right{ justify-content:flex-end; }
+
+    .bubble{
+      max-width: 78%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .msg.left .bubble{
+      background: var(--bubble-other);
+      color: var(--bubble-other-text);
+      border-top-left-radius: 6px;
+    }
+
+    .msg.right .bubble{
+      background: var(--bubble-me);
+      color: var(--bubble-me-text);
+      border-color: rgba(37,99,235,0.30);
+      border-top-right-radius: 6px;
+    }
+
+    .meta{
+      display:flex;
+      gap:8px;
+      align-items:baseline;
+      margin-bottom: 4px;
+      opacity: 0.95;
+    }
+
+    .who{ font-weight: 900; font-size: 13px; }
+    .ts{ font-size: 11px; opacity: 0.75; }
+
+    .text{
+      font-size: 14px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .read{
+      margin-top: 6px;
+      font-size: 11px;
+      opacity: 0.75;
+      text-align: right;
+    }
+
+    /* System + Date separator */
+    .system{
+      display:flex;
+      justify-content:center;
+      margin: 10px 0;
+    }
+    .system .pill{
+      font-size: 12px;
+      color: rgba(15,23,42,0.7);
+      background: var(--pill);
+      border: 1px solid var(--border);
+      padding: 7px 10px;
+      border-radius: 999px;
+    }
+    html[data-mode="dark"] .system .pill{
+      color: rgba(230,233,242,0.85);
+    }
+
+    .date-sep{
+      display:flex;
+      justify-content:center;
+      margin: 14px 0;
+    }
+    .date-sep .pill{
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 7px 10px;
+      border-radius: 999px;
+    }
+
+    /* Toast */
+    .toast{
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.10);
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: 180ms ease;
+      pointer-events:none;
+      max-width: 360px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .toast.show{ opacity: 1; transform: translateY(0); }
+
+    /* Emoji picker */
+    .emojiBar{
+      display:flex;
+      gap:8px;
+      padding: 10px 12px 0 12px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .emojiPanel{
+      display:none;
+      padding: 8px 12px 12px 12px;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .emojiPanel.show{ display:flex; }
+    .emojiBtn{
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+  </style>
 </head>
+
 <body>
+  <div class="wrap">
+    <div class="top">
+      <div class="title">
+        <h1>💬 Messenger</h1>
+        <div class="sub">Light modern UI • themes • dark mode • dates • receipts • emojis</div>
+      </div>
 
-<button onclick="toggleMode()">Toggle Mode</button> <select onchange="setTheme(this.value)">
-  <option value="">Blue</option>
-  <option value="green">Green</option>
-  <option value="pink">Pink</option>
-</select>
+      <div class="rightTools">
+        <div class="status">
+          <span class="dot" id="dot"></span>
+          <span id="statusText">connecting...</span>
+        </div>
 
-<div class="chat" id="chat"></div>
+        <button class="btn" id="modeBtn" type="button">Toggle Dark/Light</button>
 
-<input id="name" placeholder="Name">
-<input id="text">
-<button onclick="send()">Send</button>
+        <select id="themeSel">
+          <option value="blue">Blue</option>
+          <option value="green">Green</option>
+          <option value="pink">Pink</option>
+          <option value="purple">Purple</option>
+          <option value="orange">Orange</option>
+        </select>
+      </div>
+    </div>
 
-<div id="emojiPicker"></div>
+    <div class="card">
+      <div class="chat" id="chat"></div>
+      <div class="typing" id="typing"></div>
 
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script>
-const socket = io();
-const chat = document.getElementById("chat"); const nameInput = document.getElementById("name"); const textInput = document.getElementById("text");
+      <div class="emojiBar">
+        <button class="btn" id="emojiToggle" type="button">😊 Emoji</button>
+        <span style="font-size:12px; color:var(--muted);">Tip: click an emoji to insert</span>
+      </div>
+      <div class="emojiPanel" id="emojiPanel"></div>
 
-let lastDate = null;
+      <div class="row">
+        <input id="name" placeholder="Your name" />
+        <input id="text" placeholder="Type a message..." />
+        <button class="btn" id="sendBtn" type="button">Send</button>
+      </div>
+    </div>
+  </div>
 
-function formatDate(d){
-  return new Date(d).toDateString();
-}
+  <div class="toast" id="toast"></div>
 
-function addMessage(msg){
-  const msgDate = formatDate(msg.created_at);
-  if(msgDate !== lastDate){
-    const sep = document.createElement("div");
-    sep.className="date-sep";
-    sep.textContent=msgDate;
-    chat.appendChild(sep);
-    lastDate = msgDate;
-  }
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const chat = document.getElementById("chat");
+    const nameEl = document.getElementById("name");
+    const textEl = document.getElementById("text");
+    const sendBtn = document.getElementById("sendBtn");
+    const typingEl = document.getElementById("typing");
+    const statusText = document.getElementById("statusText");
+    const dot = document.getElementById("dot");
+    const toast = document.getElementById("toast");
 
-  const div = document.createElement("div");
-  const isMine = msg.name === nameInput.value;
-  div.className="msg " + (isMine ? "right" : "left");
+    const modeBtn = document.getElementById("modeBtn");
+    const themeSel = document.getElementById("themeSel");
+    const emojiToggle = document.getElementById("emojiToggle");
+    const emojiPanel = document.getElementById("emojiPanel");
 
-  div.innerHTML=`
-    <div class="bubble">${msg.text}</div>
-    <div class="meta">${msg.name}</div>
-    <div class="read" id="read-${msg.id}"></div>
-  `;
+    // Persist name for alignment + receipts
+    nameEl.value = localStorage.getItem("lan_name") || "";
+    nameEl.addEventListener("change", () => localStorage.setItem("lan_name", nameEl.value.trim()));
 
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+    // Persist theme prefs
+    const savedMode = localStorage.getItem("lan_mode") || "light";
+    const savedTheme = localStorage.getItem("lan_theme") || "blue";
+    document.documentElement.setAttribute("data-mode", savedMode);
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    themeSel.value = savedTheme;
 
-  if(!isMine){
-    socket.emit("read", {message_id: msg.id, reader:nameInput.value});
-  }
-}
+    modeBtn.addEventListener("click", () => {
+      const cur = document.documentElement.getAttribute("data-mode") || "light";
+      const next = cur === "light" ? "dark" : "light";
+      document.documentElement.setAttribute("data-mode", next);
+      localStorage.setItem("lan_mode", next);
+    });
 
-socket.on("history", data=>{
-  data.forEach(addMessage);
-});
+    themeSel.addEventListener("change", () => {
+      const t = themeSel.value;
+      document.documentElement.setAttribute("data-theme", t);
+      localStorage.setItem("lan_theme", t);
+    });
 
-socket.on("chat_message", msg=>{
-  addMessage(msg);
-});
+    // Toast
+    function showToast(text){
+      toast.textContent = text;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1400);
+    }
 
-socket.on("read_update", data=>{
-  const el = document.getElementById("read-"+data.message_id);
-  if(el) el.textContent="Seen ✓";
-});
+    // Ping sound
+    function ping(){
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioCtx();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.value = 880;
+        g.gain.value = 0.03;
+        o.connect(g); g.connect(ctx.destination);
+        o.start();
+        setTimeout(() => { o.stop(); ctx.close(); }, 120);
+      } catch (e) {}
+    }
 
-function send(){
-  socket.emit("chat_message", {
-    name:nameInput.value,
-    text:textInput.value
-  });
-  textInput.value="";
-}
+    // Emoji picker (simple)
+    const EMOJIS = ["😀","😂","😍","😎","🔥","👍","🎉","❤️","🥹","🙏","💯","✨","🤝","😴","🤯","🤔","😅","😭","👀","✅","❌","🍜","☕","🫶"];
+    EMOJIS.forEach(e => {
+      const b = document.createElement("button");
+      b.className = "emojiBtn";
+      b.type = "button";
+      b.textContent = e;
+      b.addEventListener("click", () => {
+        textEl.value += e;
+        textEl.focus();
+      });
+      emojiPanel.appendChild(b);
+    });
+    emojiToggle.addEventListener("click", () => {
+      emojiPanel.classList.toggle("show");
+    });
 
-function toggleMode(){
-  const m = document.documentElement.getAttribute("data-mode")==="dark"?"light":"dark";
-  document.documentElement.setAttribute("data-mode", m); }
+    // Safe html
+    function escapeHtml(s) {
+      return (s || "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[c]));
+    }
 
-function setTheme(t){
-  document.documentElement.setAttribute("data-theme", t); }
+    // Date separator helpers
+    let lastDateKey = null;
 
-/* Emoji Picker */
-const emojis = ["😀","😂","😍","😎","🔥","👍","🎉","❤️"];
-const picker = document.getElementById("emojiPicker");
-emojis.forEach(e=>{
-  const btn = document.createElement("button");
-  btn.textContent=e;
-  btn.onclick=()=>textInput.value+=e;
-  picker.appendChild(btn);
-});
-</script>
+    function dateKeyFromISO(iso){
+      const d = new Date(iso);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
 
+    function labelForISO(iso){
+      const d = new Date(iso);
+      const today = new Date();
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const startOfThat = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const diffDays = Math.round((startOfToday - startOfThat) / (1000*60*60*24));
+
+      if (diffDays === 0) return "Today";
+      if (diffDays === 1) return "Yesterday";
+      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    }
+
+    function addDateSeparator(label){
+      const wrap = document.createElement("div");
+      wrap.className = "date-sep";
+      wrap.innerHTML = `<div class="pill">${escapeHtml(label)}</div>`;
+      chat.appendChild(wrap);
+    }
+
+    function ensureDateSeparator(created_at_iso){
+      const key = dateKeyFromISO(created_at_iso);
+      if (key !== lastDateKey){
+        addDateSeparator(labelForISO(created_at_iso));
+        lastDateKey = key;
+      }
+    }
+
+    // Read receipts tracking: only show for my messages
+    const myMessageEls = new Map(); // msg_id -> read div
+    const seenSet = new Set(); // msg ids that were seen by someone
+
+    function addMessage(msg){
+      ensureDateSeparator(msg.created_at);
+
+      const myName = (nameEl.value.trim() || "Anon");
+      const isMine = msg.name === myName;
+
+      const row = document.createElement("div");
+      row.className = `msg ${isMine ? "right" : "left"}`;
+
+      const time = new Date(msg.created_at).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+
+      row.innerHTML = `
+        <div class="bubble">
+          <div class="meta">
+            <div class="who">${escapeHtml(msg.name)}</div>
+            <div class="ts">${escapeHtml(time)}</div>
+          </div>
+          <div class="text">${escapeHtml(msg.text)}</div>
+          ${isMine ? `<div class="read" id="read-${msg.id}"></div>` : ``}
+        </div>
+      `;
+
+      chat.appendChild(row);
+      chat.scrollTop = chat.scrollHeight;
+
+      if (isMine){
+        const readDiv = row.querySelector(`#read-${msg.id}`);
+        myMessageEls.set(msg.id, readDiv);
+        // if we already got seen update earlier (rare), apply it
+        if (seenSet.has(msg.id)) readDiv.textContent = "Seen ✓";
+      } else {
+        // Mark read immediately when we display an incoming message
+        socket.emit("read", { message_id: msg.id, reader: myName });
+      }
+    }
+
+    // Socket.IO
+    const socket = io(window.location.origin);
+
+    socket.on("connect", () => {
+      statusText.textContent = "connected";
+      dot.className = "dot ok";
+      socket.emit("join", { name: (nameEl.value.trim() || "Anon") });
+    });
+
+    socket.on("disconnect", () => {
+      statusText.textContent = "disconnected";
+      dot.className = "dot bad";
+    });
+
+    socket.on("connect_error", (err) => {
+      statusText.textContent = "connect error";
+      dot.className = "dot bad";
+      console.error("connect_error:", err);
+    });
+
+    // History load
+    socket.on("history", (items) => {
+      chat.innerHTML = "";
+      lastDateKey = null;
+      myMessageEls.clear();
+      seenSet.clear();
+
+      (items || []).forEach(m => addMessage(m));
+      chat.scrollTop = chat.scrollHeight;
+    });
+
+    // New message
+    socket.on("chat_message", (msg) => {
+      const myName = (nameEl.value.trim() || "Anon");
+      const isMine = msg.name === myName;
+
+      addMessage(msg);
+
+      if (!isMine){
+        ping();
+        showToast(`${msg.name}: ${msg.text}`);
+      }
+    });
+
+    // Read receipts update
+    socket.on("read_update", (data) => {
+      const myName = (nameEl.value.trim() || "Anon");
+      // if I am the reader, don't mark my own messages as seen from me
+      if ((data.reader || "") === myName) return;
+
+      const id = Number(data.message_id);
+      seenSet.add(id);
+
+      const el = myMessageEls.get(id);
+      if (el) el.textContent = "Seen ✓";
+    });
+
+    // Typing indicator (optional: keep if you want)
+    const typingUsers = new Set();
+    let typingTimeout = null;
+
+    socket.on("typing", ({name, is_typing}) => {
+      if (!name) return;
+      if (is_typing) typingUsers.add(name);
+      else typingUsers.delete(name);
+
+      const list = [...typingUsers];
+      if (list.length === 0) typingEl.textContent = "";
+      else if (list.length === 1) typingEl.textContent = `${list[0]} is typing...`;
+      else typingEl.textContent = `${list.slice(0,2).join(", ")} ${list.length > 2 ? "and others " : ""}are typing...`;
+    });
+
+    function emitTyping(on){
+      const name = (nameEl.value.trim() || "Anon");
+      socket.emit("typing", { name, is_typing: on });
+    }
+
+    textEl.addEventListener("input", () => {
+      emitTyping(true);
+      if (typingTimeout) clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => emitTyping(false), 900);
+    });
+
+    // Send
+    function sendMessage(){
+      const name = (nameEl.value.trim() || "Anon");
+      const text = textEl.value.trim();
+      if (!text) return;
+
+      socket.emit("chat_message", { name, text });
+      textEl.value = "";
+      emitTyping(false);
+      textEl.focus();
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    textEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
 </body>
 </html>
