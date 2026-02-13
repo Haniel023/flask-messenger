@@ -1,90 +1,364 @@
-<!DOCTYPE html>
-<html lang="en">
+
+<!doctype html>
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask Messenger</title>
-    <style>
-        body {font-family: Arial, sans-serif; max-width: 700px; margin: 24px auto; padding: 0 14px;}
-        #chat {border: 1px solid #ddd; border-radius: 10px; padding: 12px; height: 360px; overflow-y: auto;}
-        .msg {margin: 8px 0;}
-        .name {font-weight: bold;}
-        .row { display: flex; gap: 10px; margin-top: 12px;}
-        input, button {padding: 10px; border-radius: 8px; border: 1px solid #ccc;}
-        #name {width: 160px;}
-        #text {flex: 1;}
-        #status {margin: 10px 0; font-size: 14px; color: #444;}
-        button {cursor: pointer;}
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flask Messenger</title>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1a2e;
+      --panel2:#0d1729;
+      --text:#e6e9f2;
+      --muted:#9aa3b2;
+      --accent:#6ea8fe;
+      --bubble:#142446;
+      --bubble2:#1a2d55;
+      --danger:#ff6b6b;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 800px at 20% 0%, #121f3d 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+    .wrap{
+      max-width: 860px;
+      margin: 22px auto;
+      padding: 0 14px;
+    }
+    .top{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom: 12px;
+    }
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    .title h1{
+      font-size:18px;
+      margin:0;
+      letter-spacing:0.2px;
+    }
+    .title .sub{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      overflow:hidden;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+    }
+    .chat{
+      height: 430px;
+      overflow-y:auto;
+      padding: 14px;
+      background: rgba(0,0,0,0.12);
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      padding: 12px;
+      background: rgba(0,0,0,0.10);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      align-items:center;
+    }
+    input, button{
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(15,26,46,0.9);
+      color: var(--text);
+      padding: 11px 12px;
+      outline:none;
+    }
+    input::placeholder{ color: rgba(154,163,178,0.65); }
+    #name{ width: 170px; }
+    #text{ flex:1; }
+    button{
+      background: linear-gradient(180deg, rgba(110,168,254,0.95), rgba(110,168,254,0.70));
+      border: 1px solid rgba(110,168,254,0.65);
+      font-weight: 600;
+      cursor:pointer;
+    }
+    button:active{ transform: translateY(1px); }
+
+    .msg{
+      display:flex;
+      margin: 10px 0;
+      gap: 10px;
+    }
+    .bubble{
+      max-width: 78%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(20,36,70,0.85);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .meta{
+      display:flex;
+      gap:8px;
+      align-items:baseline;
+      margin-bottom: 4px;
+    }
+    .who{
+      font-weight: 700;
+      font-size: 13px;
+      color: #dfe6ff;
+    }
+    .ts{
+      font-size: 11px;
+      color: rgba(154,163,178,0.8);
+    }
+    .text{
+      font-size: 14px;
+      line-height: 1.35;
+      color: rgba(230,233,242,0.95);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .system{
+      display:flex;
+      justify-content:center;
+      margin: 10px 0;
+    }
+    .system .pill{
+      font-size: 12px;
+      color: rgba(230,233,242,0.85);
+      background: rgba(13,23,41,0.9);
+      border: 1px solid rgba(255,255,255,0.10);
+      padding: 7px 10px;
+      border-radius: 999px;
+    }
+    .status{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:99px;
+      background: #ffcc66;
+      box-shadow: 0 0 14px rgba(255,204,102,0.55);
+    }
+    .dot.ok{ background:#6df2a4; box-shadow:0 0 14px rgba(109,242,164,0.45); }
+    .dot.bad{ background:#ff6b6b; box-shadow:0 0 14px rgba(255,107,107,0.45); }
+
+    .typing{
+      padding: 8px 14px 0 14px;
+      font-size: 12px;
+      color: rgba(154,163,178,0.9);
+      min-height: 18px;
+    }
+
+    .toast{
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      background: rgba(15,26,46,0.92);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: 180ms ease;
+      pointer-events:none;
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
 </head>
+
 <body>
-    <h2>🗪 Flask Messenger</h2>
-    <div id="status">Status: connecting...</div>
+  <div class="wrap">
+    <div class="top">
+      <div class="title">
+        <h1>💬 FLASK Messenger</h1>
+        <div class="sub">Secret Messenger</div>
+      </div>
 
-    <div id="chat"></div>
-
-    <div class="row">
-        <input id="name" placeholder="Your name"/>
-        <input id="text" placeholder="Type a message..."/>
-        <button id="sendBtn" type="button">Send</button>
+      <div class="status">
+        <span class="dot" id="dot"></span>
+        <span id="statusText">connecting...</span>
+        <button id="notifyBtn" type="button" style="background:transparent;border:1px solid rgba(255,255,255,0.12);font-weight:600;">
+          Enable Notifications
+        </button>
+      </div>
     </div>
 
-    <!--Socket.IO Client-->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script>
+    <div class="card">
+      <div class="chat" id="chat"></div>
+      <div class="typing" id="typing"></div>
 
-        const statusEl = document.getElementById("status");
-        const chat = document.getElementById("chat");
-        const nameEl = document.getElementById("name");
-        const textEl = document.getElementById("text");
-        const sendBtn = document.getElementById("sendBtn");
+      <div class="row">
+        <input id="name" placeholder="Your name" />
+        <input id="text" placeholder="Type a message..." />
+        <button id="sendBtn" type="button">Send</button>
+      </div>
+    </div>
+  </div>
 
-        function escapeHtml(s){
-            return (s || "").replace(/[&<>"'"]/g, (c) => ({
-                "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-            }[c]));
-        }
+  <div class="toast" id="toast"></div>
 
-        function addMessage({name, text}){
-            const div = document.createElement("div");
-            div.className = "msg";
-            div.innerHTML = `<span class="name">${escapeHtml(name)}:</span> ${escapeHtml(text)}`;
-            chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight;
-        }
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const chat = document.getElementById("chat");
+    const nameEl = document.getElementById("name");
+    const textEl = document.getElementById("text");
+    const sendBtn = document.getElementById("sendBtn");
+    const typingEl = document.getElementById("typing");
+    const statusText = document.getElementById("statusText");
+    const dot = document.getElementById("dot");
+    const toast = document.getElementById("toast");
+    const notifyBtn = document.getElementById("notifyBtn");
 
-        const socket = io(window.location.origin);
+    // Connect to same host you opened in the browser (works on PC B too)
+    const socket = io(window.location.origin);
 
-        socket.on("connect", () => {
-            statusEl.textContent = "Status: connected ✅";
-            console.log("Connected: ", socket.id);
-        })
+    // --- helpers
+    function escapeHtml(s) {
+      return (s || "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[c]));
+    }
+    function showToast(text){
+      toast.textContent = text;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1500);
+    }
+    function maybeNotify(title, body){
+      if (document.hasFocus()) return; // no need if tab active
+      if (!("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
+      new Notification(title, { body });
+    }
 
-        socket.on("disconnect", () => {
-            statusEl.textContent = "Status: disconnected ❌";
-            console.log("Disconnected");
-        })
+    function addSystem(text, ts){
+      const wrap = document.createElement("div");
+      wrap.className = "system";
+      wrap.innerHTML = `<div class="pill">${escapeHtml(text)} <span style="opacity:.7">· ${escapeHtml(ts||"")}</span></div>`;
+      chat.appendChild(wrap);
+      chat.scrollTop = chat.scrollHeight;
+    }
 
-        socket.on("connect_error", (err) => {
-            statusEl.textContent = "Status: connect error ❌ (Check firewall/IP)";
-            console.error("connect_error: ", err);
-        })
+    function addMessage({name, text, ts}){
+      const row = document.createElement("div");
+      row.className = "msg";
+      row.innerHTML = `
+        <div class="bubble">
+          <div class="meta">
+            <div class="who">${escapeHtml(name)}</div>
+            <div class="ts">${escapeHtml(ts || "")}</div>
+          </div>
+          <div class="text">${escapeHtml(text)}</div>
+        </div>
+      `;
+      chat.appendChild(row);
+      chat.scrollTop = chat.scrollHeight;
+    }
 
-        socket.on("message", (msg) => addMessage(msg));
+    // --- connection status
+    socket.on("connect", () => {
+      statusText.textContent = "connected";
+      dot.className = "dot ok";
+      const name = (nameEl.value.trim() || "Anon");
+      socket.emit("join", { name });
+    });
 
-        function sendMessage(){
-            const name = nameEl.value.trim() || "Anon";
-            const text = textEl.value.trim();
-            if(!text) return;
-            socket.send({name, text});
-            textEl.value = "";
-            textEl.focus();
-        }
+    socket.on("disconnect", () => {
+      statusText.textContent = "disconnected";
+      dot.className = "dot bad";
+    });
 
-        sendBtn.addEventListener("click", sendMessage);
-        textEl.addEventListener("keydown", (e) => {
-            if(e.key === "Enter") sendMessage();
-        })
-    </script>
+    socket.on("connect_error", (err) => {
+      statusText.textContent = "connect error (check firewall/IP)";
+      dot.className = "dot bad";
+      console.error("connect_error:", err);
+    });
+
+    // --- notifications from server
+    socket.on("system", (msg) => {
+      addSystem(msg.text, msg.ts);
+      showToast(msg.text);
+      maybeNotify("LAN Messenger", msg.text);
+    });
+
+    socket.on("chat_message", (msg) => {
+      addMessage(msg);
+      maybeNotify(`${msg.name}`, msg.text);
+    });
+
+    // --- typing indicator
+    const typingUsers = new Set();
+    let typingTimeout = null;
+
+    socket.on("typing", ({name, is_typing}) => {
+      if (!name) return;
+      if (is_typing) typingUsers.add(name);
+      else typingUsers.delete(name);
+
+      const list = [...typingUsers];
+      if (list.length === 0) typingEl.textContent = "";
+      else if (list.length === 1) typingEl.textContent = `${list[0]} is typing...`;
+      else typingEl.textContent = `${list.slice(0,2).join(", ")} ${list.length > 2 ? "and others " : ""}are typing...`;
+    });
+
+    function emitTyping(on){
+      const name = (nameEl.value.trim() || "Anon");
+      socket.emit("typing", { name, is_typing: on });
+    }
+
+    textEl.addEventListener("input", () => {
+      emitTyping(true);
+      if (typingTimeout) clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => emitTyping(false), 900); // debounce stop typing
+    });
+
+    // --- send message
+    function sendMessage(){
+      const name = (nameEl.value.trim() || "Anon");
+      const text = textEl.value.trim();
+      if (!text) return;
+      socket.emit("chat_message", { name, text });
+      textEl.value = "";
+      emitTyping(false);
+      textEl.focus();
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    textEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    // --- leave event when tab closes
+    window.addEventListener("beforeunload", () => {
+      const name = (nameEl.value.trim() || "Anon");
+      socket.emit("leave", { name });
+    });
+
+    // --- browser notifications permission
+    notifyBtn.addEventListener("click", async () => {
+      if (!("Notification" in window)) {
+        showToast("Notifications not supported");
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      showToast(`Notifications: ${perm}`);
+    });
+  </script>
 </body>
 </html>
