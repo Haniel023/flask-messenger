@@ -32,6 +32,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+init_db()
 
 def now_ts():
     return datetime.now().strftime("%H:%M")
@@ -104,7 +105,6 @@ def on_leave(data):
 
 
 if __name__ == "__main__":
-    init_db()
     port = int(os.environ.get("PORT", 4021))
     socketio.run(app, host="0.0.0.0", port=port)
 
