@@ -1,392 +1,168 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FLASK Messenger</title>
+<meta charset="utf-8">
+<title>Messenger</title>
 
-  <style>
-    :root{
-      --bg: #f6f7fb;
-      --panel: #ffffff;
-      --border: rgba(15, 23, 42, 0.10);
-      --text: #0f172a;
-      --muted: rgba(15, 23, 42, 0.55);
-      --accent: #2563eb;
+<style>
+:root{
+  --bg:#f6f7fb;
+  --panel:#ffffff;
+  --text:#0f172a;
+  --border:#e2e8f0;
+  --accent:#2563eb;
+}
 
-      --bubble-me: #2563eb;
-      --bubble-me-text: #ffffff;
+[data-mode="dark"]{
+  --bg:#0b1220;
+  --panel:#0f172a;
+  --text:#e2e8f0;
+  --border:#1e293b;
+}
 
-      --bubble-other: #eef2ff;
-      --bubble-other-text: #0f172a;
+[data-theme="green"]{ --accent:#16a34a; } [data-theme="pink"]{ --accent:#db2777; }
 
-      --pill: #f1f5f9;
-    }
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:sans-serif;
+}
 
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: var(--bg);
-      color: var(--text);
-    }
+.chat{
+  height:400px;
+  overflow-y:auto;
+  border:1px solid var(--border);
+  padding:10px;
+  background:var(--panel);
+}
 
-    .wrap{ max-width: 900px; margin: 22px auto; padding: 0 14px; }
+.msg{ margin:10px 0; }
+.right{ text-align:right; }
 
-    .top{
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom: 12px;
-    }
+.bubble{
+  display:inline-block;
+  padding:8px 12px;
+  border-radius:12px;
+  background:var(--accent);
+  color:white;
+}
 
-    .title{ display:flex; flex-direction:column; gap:2px; }
-    .title h1{ font-size:18px; margin:0; }
-    .title .sub{ font-size:12px; color:var(--muted); }
+.left .bubble{
+  background:#e2e8f0;
+  color:black;
+}
 
-    .status{
-      display:flex; gap:10px; align-items:center;
-      color: var(--muted);
-      font-size: 12px;
-    }
+.meta{
+  font-size:11px;
+  opacity:0.6;
+}
 
-    .dot{
-      width:8px;height:8px;border-radius:99px;
-      background: #f59e0b;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
-    }
-    .dot.ok{ background:#22c55e; box-shadow:0 0 10px rgba(34, 197, 94, 0.30); }
-    .dot.bad{ background:#ef4444; box-shadow:0 0 10px rgba(239, 68, 68, 0.25); }
+.date-sep{
+  text-align:center;
+  font-size:12px;
+  margin:10px 0;
+  opacity:0.6;
+}
 
-    .card{
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow:hidden;
-      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
-    }
-
-    .chat{
-      height: 460px;
-      overflow-y:auto;
-      padding: 14px;
-      background: linear-gradient(180deg, rgba(37,99,235,0.03), transparent 40%);
-    }
-
-    .typing{
-      padding: 8px 14px 0 14px;
-      font-size: 12px;
-      color: var(--muted);
-      min-height: 18px;
-    }
-
-    .row{
-      display:flex;
-      gap:10px;
-      padding: 12px;
-      border-top: 1px solid var(--border);
-      align-items:center;
-      background: rgba(15,23,42,0.02);
-    }
-
-    input, button{
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--text);
-      padding: 11px 12px;
-      outline:none;
-    }
-    input::placeholder{ color: rgba(15,23,42,0.35); }
-    #name{ width: 170px; }
-    #text{ flex:1; }
-    button{
-      background: var(--accent);
-      border: 1px solid rgba(37,99,235,0.35);
-      color: #fff;
-      font-weight: 700;
-      cursor:pointer;
-    }
-    button:active{ transform: translateY(1px); }
-
-    /* Message layout */
-    .msg{ display:flex; margin: 10px 0; }
-    .msg.left{ justify-content:flex-start; }
-    .msg.right{ justify-content:flex-end; }
-
-    .bubble{
-      max-width: 78%;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-    }
-
-    .msg.left .bubble{
-      background: var(--bubble-other);
-      color: var(--bubble-other-text);
-      border-top-left-radius: 6px;
-    }
-
-    .msg.right .bubble{
-      background: var(--bubble-me);
-      color: var(--bubble-me-text);
-      border-color: rgba(37,99,235,0.35);
-      border-top-right-radius: 6px;
-    }
-
-    .meta{
-      display:flex;
-      gap:8px;
-      align-items:baseline;
-      margin-bottom: 4px;
-      opacity: 0.95;
-    }
-
-    .who{ font-weight: 800; font-size: 13px; }
-    .ts{ font-size: 11px; opacity: 0.75; }
-
-    .text{
-      font-size: 14px;
-      line-height: 1.35;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .system{
-      display:flex;
-      justify-content:center;
-      margin: 10px 0;
-    }
-    .system .pill{
-      font-size: 12px;
-      color: rgba(15,23,42,0.7);
-      background: var(--pill);
-      border: 1px solid var(--border);
-      padding: 7px 10px;
-      border-radius: 999px;
-    }
-
-    .toast{
-      position: fixed;
-      right: 16px;
-      bottom: 16px;
-      background: #fff;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.10);
-      font-size: 13px;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: 180ms ease;
-      pointer-events:none;
-    }
-    .toast.show{ opacity: 1; transform: translateY(0); }
-  </style>
+.read{
+  font-size:10px;
+  opacity:0.5;
+}
+</style>
 </head>
-
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div class="title">
-        <h1>💬 FLASK Messenger</h1>
-        <div class="sub">Secret Messenger</div>
-      </div>
 
-      <div class="status">
-        <span class="dot" id="dot"></span>
-        <span id="statusText">connecting...</span>
-      </div>
-    </div>
+<button onclick="toggleMode()">Toggle Mode</button> <select onchange="setTheme(this.value)">
+  <option value="">Blue</option>
+  <option value="green">Green</option>
+  <option value="pink">Pink</option>
+</select>
 
-    <div class="card">
-      <div class="chat" id="chat"></div>
-      <div class="typing" id="typing"></div>
+<div class="chat" id="chat"></div>
 
-      <div class="row">
-        <input id="name" placeholder="Your name" />
-        <input id="text" placeholder="Type a message..." />
-        <button id="sendBtn" type="button">Send</button>
-      </div>
-    </div>
-  </div>
+<input id="name" placeholder="Name">
+<input id="text">
+<button onclick="send()">Send</button>
 
-  <div class="toast" id="toast"></div>
+<div id="emojiPicker"></div>
 
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script>
-    const chat = document.getElementById("chat");
-    const nameEl = document.getElementById("name");
-    const textEl = document.getElementById("text");
-    const sendBtn = document.getElementById("sendBtn");
-    const typingEl = document.getElementById("typing");
-    const statusText = document.getElementById("statusText");
-    const dot = document.getElementById("dot");
-    const toast = document.getElementById("toast");
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+const socket = io();
+const chat = document.getElementById("chat"); const nameInput = document.getElementById("name"); const textInput = document.getElementById("text");
 
-    // Persist your name so "my messages" alignment works
-    nameEl.value = localStorage.getItem("lan_name") || "";
-    nameEl.addEventListener("change", () => localStorage.setItem("lan_name", nameEl.value.trim()));
+let lastDate = null;
 
-    // Connect to same host opened in browser
-    const socket = io(window.location.origin);
+function formatDate(d){
+  return new Date(d).toDateString();
+}
 
-    function escapeHtml(s) {
-      return (s || "").replace(/[&<>"']/g, (c) => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-      }[c]));
-    }
+function addMessage(msg){
+  const msgDate = formatDate(msg.created_at);
+  if(msgDate !== lastDate){
+    const sep = document.createElement("div");
+    sep.className="date-sep";
+    sep.textContent=msgDate;
+    chat.appendChild(sep);
+    lastDate = msgDate;
+  }
 
-    function showToast(text){
-      toast.textContent = text;
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 1400);
-    }
+  const div = document.createElement("div");
+  const isMine = msg.name === nameInput.value;
+  div.className="msg " + (isMine ? "right" : "left");
 
-    // 🔊 Ping sound (no notification permission needed)
-    function ping(){
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioCtx();
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = "sine";
-        o.frequency.value = 880; // pitch
-        g.gain.value = 0.03;     // volume (lowkey)
-        o.connect(g); g.connect(ctx.destination);
-        o.start();
-        setTimeout(() => { o.stop(); ctx.close(); }, 120);
-      } catch (e) {
-        // ignore if blocked
-      }
-    }
+  div.innerHTML=`
+    <div class="bubble">${msg.text}</div>
+    <div class="meta">${msg.name}</div>
+    <div class="read" id="read-${msg.id}"></div>
+  `;
 
-    function addSystem(text, ts){
-      const wrap = document.createElement("div");
-      wrap.className = "system";
-      wrap.innerHTML = `<div class="pill">${escapeHtml(text)} <span style="opacity:.7">· ${escapeHtml(ts||"")}</span></div>`;
-      chat.appendChild(wrap);
-      chat.scrollTop = chat.scrollHeight;
-    }
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 
-    function addMessage({name, text, ts}, isMine){
-      const row = document.createElement("div");
-      row.className = `msg ${isMine ? "right" : "left"}`;
+  if(!isMine){
+    socket.emit("read", {message_id: msg.id, reader:nameInput.value});
+  }
+}
 
-      row.innerHTML = `
-        <div class="bubble">
-          <div class="meta">
-            <div class="who">${escapeHtml(name)}</div>
-            <div class="ts">${escapeHtml(ts || "")}</div>
-          </div>
-          <div class="text">${escapeHtml(text)}</div>
-        </div>
-      `;
-      chat.appendChild(row);
-      chat.scrollTop = chat.scrollHeight;
-    }
+socket.on("history", data=>{
+  data.forEach(addMessage);
+});
 
-    // --- connection status
-    socket.on("connect", () => {
-      statusText.textContent = "connected";
-      dot.className = "dot ok";
-      const name = (nameEl.value.trim() || "Anon");
-      socket.emit("join", { name });
-    });
+socket.on("chat_message", msg=>{
+  addMessage(msg);
+});
 
-    socket.on("disconnect", () => {
-      statusText.textContent = "disconnected";
-      dot.className = "dot bad";
-    });
+socket.on("read_update", data=>{
+  const el = document.getElementById("read-"+data.message_id);
+  if(el) el.textContent="Seen ✓";
+});
 
-    socket.on("connect_error", (err) => {
-      statusText.textContent = "connect error (check firewall/IP)";
-      dot.className = "dot bad";
-      console.error("connect_error:", err);
-    });
+function send(){
+  socket.emit("chat_message", {
+    name:nameInput.value,
+    text:textInput.value
+  });
+  textInput.value="";
+}
 
-    // --- load history (from server)
-    socket.on("history", (items) => {
-      // clear chat then render
-      chat.innerHTML = "";
-      const myName = (nameEl.value.trim() || "Anon");
-      (items || []).forEach(m => addMessage(m, m.name === myName));
-      chat.scrollTop = chat.scrollHeight;
-    });
+function toggleMode(){
+  const m = document.documentElement.getAttribute("data-mode")==="dark"?"light":"dark";
+  document.documentElement.setAttribute("data-mode", m); }
 
-    // --- system notifications
-    socket.on("system", (msg) => {
-      addSystem(msg.text, msg.ts);
-      showToast(msg.text);
-      // optional ping on join/leave:
-      // ping();
-    });
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t); }
 
-    // --- typing indicator
-    const typingUsers = new Set();
-    let typingTimeout = null;
+/* Emoji Picker */
+const emojis = ["😀","😂","😍","😎","🔥","👍","🎉","❤️"];
+const picker = document.getElementById("emojiPicker");
+emojis.forEach(e=>{
+  const btn = document.createElement("button");
+  btn.textContent=e;
+  btn.onclick=()=>textInput.value+=e;
+  picker.appendChild(btn);
+});
+</script>
 
-    socket.on("typing", ({name, is_typing}) => {
-      if (!name) return;
-      if (is_typing) typingUsers.add(name);
-      else typingUsers.delete(name);
-
-      const list = [...typingUsers];
-      if (list.length === 0) typingEl.textContent = "";
-      else if (list.length === 1) typingEl.textContent = `${list[0]} is typing...`;
-      else typingEl.textContent = `${list.slice(0,2).join(", ")} ${list.length > 2 ? "and others " : ""}are typing...`;
-    });
-
-    function emitTyping(on){
-      const name = (nameEl.value.trim() || "Anon");
-      socket.emit("typing", { name, is_typing: on });
-    }
-
-    textEl.addEventListener("input", () => {
-      emitTyping(true);
-      if (typingTimeout) clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => emitTyping(false), 900);
-    });
-
-    // --- send message
-    function sendMessage(){
-      const name = (nameEl.value.trim() || "Anon");
-      const text = textEl.value.trim();
-      if (!text) return;
-
-      // play ping only on incoming messages, so NOT here
-      socket.emit("chat_message", { name, text });
-      textEl.value = "";
-      emitTyping(false);
-      textEl.focus();
-    }
-
-    sendBtn.addEventListener("click", sendMessage);
-    textEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-
-    // --- incoming messages
-    socket.on("chat_message", (msg) => {
-      const myName = (nameEl.value.trim() || "Anon");
-      const isMine = (msg.name === myName);
-
-      addMessage(msg, isMine);
-
-      // 🔊 Ping if it's from the other person (and especially if tab not focused)
-      if (!isMine) {
-        ping();
-        showToast(`${msg.name}: ${msg.text}`);
-      }
-    });
-
-    // --- leave event when tab closes
-    window.addEventListener("beforeunload", () => {
-      const name = (nameEl.value.trim() || "Anon");
-      socket.emit("leave", { name });
-    });
-  </script>
 </body>
 </html>
