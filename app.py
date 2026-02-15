@@ -52,11 +52,11 @@ def save_message(name: str, text: str) -> dict:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO messages (name, text)
-                VALUES (%s, %s)
+                INSERT INTO messages (name, text, ts)
+                VALUES (%s, %s, %s)
                 RETURNING id, name, text, created_at
                 """,
-                (name, text),
+                (name, text, datetime.now().strftime("%H:%M")),
             )
             row = cur.fetchone()
             # created_at is datetime
